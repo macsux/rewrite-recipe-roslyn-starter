@@ -1,24 +1,15 @@
 plugins {
     id("org.openrewrite.build.recipe-library-base") version "latest.release"
-
-
-    // Configures artifact repositories used for dependency resolution to include maven central and nexus snapshots.
-    // If you are operating in an environment where public repositories are not accessible, we recommend using a
-    // virtual repository which mirrors both maven central and nexus snapshots.
     id("org.openrewrite.build.recipe-repositories") version "latest.release"
-    id("java")
     id("maven-publish")
-    id("org.jreleaser") version "1.18.0"
-
+    id("org.openrewrite.build.moderne-source-available-license") version "latest.release"
 }
 
-// Set as appropriate for your organization
 group = "com.almirex"
-description = "Rewrite recipes."
+description = "Rewrite C# recipes based on Roslyn transformations."
+version = (project.findProperty("version") as String?) ?: System.getenv("INJECTED_VERSION") ?: "unspecified"
 
 dependencies {
-    // The bom version can also be set to a specific version
-    // https://github.com/openrewrite/rewrite-recipe-bom/releases
     implementation(platform("org.openrewrite.recipe:rewrite-recipe-bom:latest.release"))
 
     implementation("org.openrewrite:rewrite-java")
@@ -28,30 +19,64 @@ dependencies {
     implementation("org.assertj:assertj-core:latest.release")
     runtimeOnly("org.openrewrite:rewrite-java-17")
 
-    // Refaster style recipes need the rewrite-templating annotation processor and dependency for generated recipes
-    // https://github.com/openrewrite/rewrite-templating/releases
-    annotationProcessor("org.openrewrite:rewrite-templating:latest.release")
-    implementation("org.openrewrite:rewrite-templating")
-    // The `@BeforeTemplate` and `@AfterTemplate` annotations are needed for refaster style recipes
-    compileOnly("com.google.errorprone:error_prone_core:latest.release") {
-        exclude("com.google.auto.service", "auto-service-annotations")
-        exclude("io.github.eisop","dataflow-errorprone")
-    }
-
-    // The RewriteTest class needed for testing recipes
     testImplementation("org.openrewrite:rewrite-test")
-
-    // Need to have a slf4j binding to see any output enabled from the parser.
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.+")
-
-    // Our recipe converts Guava's `Lists` type
-    testRuntimeOnly("com.google.guava:guava:latest.release")
-    testRuntimeOnly("org.apache.commons:commons-lang3:latest.release")
-    testRuntimeOnly("org.springframework:spring-core:latest.release")
-    testRuntimeOnly("org.springframework:spring-context:latest.release")
 }
 
-
 tasks.register("licenseFormat") {
-    println("License format task not implemented for rewrite-recipe-starter")
+    println("License format task not implemented for rewrite-recipe-roslyn-starter")
+}
+
+val sourcesJar = tasks.register<Jar>("emptySourceJar") {
+    from("README.md")
+    archiveClassifier = "sources"
+}
+
+publishing {
+    repositories {
+        maven {
+            val releaseRepo = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            val snapshotRepo = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+
+            name = "OSSRH"
+            url = if(project.hasProperty("releasing")) {
+                releaseRepo
+            } else {
+                snapshotRepo
+            }
+
+            credentials {
+                username = (findProperty("OSSRH_USERNAME") ?: System.getenv("OSSRH_USERNAME")) as String?
+                password = (findProperty("OSSRH_PASSWORD") ?: System.getenv("OSSRH_PASSWORD")) as String?
+            }
+        }
+    }
+
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = project.group as String
+            artifactId = project.name
+            version = project.version as String
+
+            from(components["java"])
+            artifact(sourcesJar)
+            pom {
+                url = "https://github.com/macsux/rewrite-recipe-roslyn-starter"
+
+                scm {
+                    url = "https://github.com/macsux/rewrite-recipe-roslyn-starter"
+                    connection = "scm:git://github.com:macsux/rewrite-recipe-roslyn-starter.git"
+                    developerConnection = "scm:git://github.com:macsux/rewrite-recipe-roslyn-starter.git"
+                }
+
+                developers {
+                    developer {
+                        id = "macsux"
+                        name = "Andrew Stakhov"
+                        email = "team@moderne.io"
+                        organizationUrl = "https://moderne.io/"
+                    }
+                }
+            }
+        }
+    }
 }
