@@ -7,7 +7,7 @@ plugins {
 
 group = "com.almirex"
 description = "Rewrite C# recipes based on Roslyn transformations."
-version = (project.findProperty("version") as String?) ?: System.getenv("INJECTED_VERSION") ?: "unspecified"
+version = (project.findProperty("version") as String?) ?: System.getenv("INJECTED_VERSION") ?: "0.1.0-SNAPSHOT"
 
 dependencies {
     implementation(platform("org.openrewrite.recipe:rewrite-recipe-bom:latest.release"))
