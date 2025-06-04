@@ -18,3 +18,16 @@ dependencies {
 
     testImplementation("org.openrewrite:rewrite-test")
 }
+
+publishing {
+    repositories {
+        maven {
+            name = "moderne"
+            url = uri("https://artifactory.moderne.ninja/artifactory/moderne-recipe/")
+            credentials {
+                username = project.findProperty("moderne.artifactory.username") as String? ?: System.getenv("MODERNE_ARTIFACTORY_USERNAME")
+                password = project.findProperty("moderne.artifactory.password") as String? ?: System.getenv("MODERNE_ARTIFACTORY_PASSWORD")
+            }
+        }
+    }
+}
